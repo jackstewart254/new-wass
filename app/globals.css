@@ -2,9 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url("https://fonts.cdnurl.com/geist-sans.css"); /* Replace with the correct URL */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-geist-sans: "Geist Sans", Arial, Helvetica, sans-serif; /* Add Geist Sans as the default font */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,5 +20,13 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Hides scrollbar in WebKit-based browsers */
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* Hides scrollbar in Internet Explorer */
+  scrollbar-width: none; /* Hides scrollbar in Firefox */
 }
