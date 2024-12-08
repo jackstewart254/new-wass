@@ -1,5 +1,5 @@
-"use client"
-import React, { createContext, useContext, useState } from 'react';
+"use client";
+import React, { createContext, useContext, useState } from "react";
 
 const GlobalContext = createContext();
 
@@ -9,7 +9,9 @@ export const GlobalProvider = ({ children }) => {
     blocks: [],
     closeSelect: false,
     movingDate: new Date(),
-    
+    showPopup: false,
+    popupContentType: "block", //block, date, new, edit and meeting
+    popupContent: {}, 
   });
 
   return (

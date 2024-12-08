@@ -1,36 +1,31 @@
 "use client";
-import { useState, useEffect } from "react";
-import MeetingDetails from "./components/meetingDetails";
-import { useGlobal } from "../context/global";
+
 import {
-  fetchMeetingInfo,
-  fetchMeetings,
-  fetchBlocks,
-  accountRouting,
-} from "../api/calls";
-import { useIsAuthenticated, useMsal } from "@azure/msal-react";
-import {
+  addWeeks,
+  differenceInMinutes,
   eachDayOfInterval,
-  startOfWeek,
   endOfWeek,
   format,
-  differenceInMinutes,
-  differenceInHours,
-  setSeconds,
-  setMinutes,
   setHours,
   setMilliseconds,
-  addDays,
+  setMinutes,
+  setSeconds,
+  startOfWeek,
 } from "date-fns";
-import { leftChevron, rightChevron, settingSvg } from "./components/svg";
+import { useEffect, useState } from "react";
+import {
+  accountRouting,
+  fetchBlocks,
+  fetchMeetingInfo,
+  fetchMeetings,
+} from "../api/calls";
 import { loginRequest } from "../api/authConfig";
 import { InteractionRequiredAuthError } from "@azure/msal-browser";
-import axios from "axios";
+import { useGlobal } from "../context/global";
+import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { useRouter } from "next/navigation";
-import Settings from "../settings/page";
-import { RingLoader, SyncLoader } from "react-spinners";
-import SettingsPanel from "./components/settings";
-import SelectAll from "./components/selectAllAppointments";
+import { motion } from "motion/react";
+import MSEncrypt, { encryptText } from "../encryption/encrypt";
 
 type meeting = {
   id: number;
@@ -56,9 +51,8 @@ type blockDates = {
 };
 
 const Cal = () => {
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { global, setGlobal } = useGlobal();
-  const { render, blocks, closeSelect, movingDate } = global;
+  const { closeSelect, movingDate, blocks } = global;
   const [showSideBar, setShowSideBar] = useState(false);
   const [sideBarContent, setSideBarContent] = useState<String>();
   const constantDate = new Date();
@@ -74,7 +68,8 @@ const Cal = () => {
   const [pressedId, setPressedId] = useState<number>();
   const [loading, setLoading] = useState<boolean>();
   const [blockDates, setBlockDates] = useState<blockDates[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [panelRender, setPanelRender] = useState<boolean>(false);
+  const [blockRender, setBlockRender] = useState<boolean>(false);
 
   useEffect(() => {
     if (instance && accounts.length > 0) {
@@ -87,6 +82,11 @@ const Cal = () => {
       router.push("./");
     }
   }, [instance, accounts]);
+
+  useEffect(() => {
+    const valuee = encryptText("Hello world");
+    console.log(valuee);
+  }, []);
 
   useEffect(() => {
     if (closeSelect === true) {
@@ -105,6 +105,10 @@ const Cal = () => {
       callFetchMeetings();
     }
   }, [account]);
+
+  const callPopup = () => {
+    setGlobal({ ...global, showPopup: true });
+  };
 
   const fetchAccountRouting = async (email: string) => {
     const response = await accountRouting(email);
@@ -241,10 +245,6 @@ const Cal = () => {
   ];
 
   useEffect(() => {
-    setDimensions({ width: window.innerWidth, height: window.innerHeight });
-  }, []);
-
-  useEffect(() => {
     setDaysOfTheWeek(getWeekDays(movingDate));
   }, [movingDate]);
 
@@ -287,368 +287,236 @@ const Cal = () => {
     return difference * 1.333;
   };
 
-  const grid = () => (
-    <div
-      style={{
-        flexDirection: "column",
-        display: "flex",
-        height: "100%",
-        width: "100%",
-      }}
-    >
-      <div
-        style={{
-          height: 80,
-          width: "100%",
-          flexDirection: "row",
-          display: "flex",
-          alignItems: "flex-end",
-        }}
-      >
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            alignItems: "flex-end",
-            display: "flex",
-            justifyContent: "flex-end",
-          }}
-        >
-          <div
-            style={{ width: 60, height: 1, borderBottom: "1px solid #d9d9d9" }}
-          />
-        </div>
-        <div style={{ display: "flex", flexDirection: "row", width: "100%" }}>
-          {daysOfTheWeek.map((item, index) => {
-            const block = blockDates.filter(
-              (b) =>
-                format(new Date(b.date), "dd/MM/yyyy") ===
-                format(new Date(item), "dd/MM/yyyy")
-            );
-            const current =
-              format(item, "dd:MM:yyyy") === format(constantDate, "dd:MM:yyyy");
-
-            return (
-              <button
-                onClick={() => {
-                  handleSelectPress();
-                  setSideBarContent("Select");
-                  setSelectedDate(item);
-                }}
-                style={{
-                  width: "14.2%",
-                  borderLeft: `${index === 0 ? "1px" : "0px"} solid #d9d9d9`,
-                  borderRight: `1px solid #d9d9d9`,
-                  display: "flex",
-                  flexDirection: "column",
-                  borderBottom: "1px solid #d9d9d9",
-                  alignItems: "center",
-                  paddingBottom: 10,
-                }}
-                key={index}
-              >
-                <p
-                  style={{
-                    paddingBottom: 5,
-                    color:
-                      block.length > 0
-                        ? "orange"
-                        : current
-                        ? "#0795FF"
-                        : "black",
-                  }}
-                >
-                  {format(item, "EEEE")}
-                </p>
-                <p
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "500",
-                    color:
-                      block.length > 0
-                        ? "orange"
-                        : current
-                        ? "#0795FF"
-                        : "black",
-                  }}
-                >
-                  {format(item, "d")}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "row",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          style={{
-            width: 80,
-            height: 80 * 9,
-          }}
-        >
-          {times.map((time, tIndex) => (
-            <div
-              key={tIndex}
-              style={{
-                height: 80,
-                width: "100%",
-                display: "flex",
-                position: "relative",
-                borderBottom: `${
-                  tIndex === times.length - 1 ? "0px" : "1px"
-                } solid #d9d9d9`,
-                marginLeft: 60,
-              }}
-            >
-              {tIndex > 0 && (
-                <p
-                  style={{
-                    height: 12,
-                    position: "absolute",
-                    top: -7,
-                    left: -40,
-                  }}
-                >
-                  {time}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            width: "100%",
-            height: 80 * 9,
-            display: "flex",
-            flexDirection: "row",
-            position: "relative",
-            border: '1px solid "#D9D9D9',
-          }}
-        >
-          {daysOfTheWeek.map((item, index) => {
-            const block = blockDates.filter(
-              (b) =>
-                format(new Date(b.date), "dd/MM/yyyy") ===
-                format(new Date(item), "dd/MM/yyyy")
-            );
-
-            let value = { top: 0, height: 0 };
-            let top = new Date();
-            let height = new Date();
-
-            if (block.length > 0) {
-              top = setMilliseconds(
-                setSeconds(
-                  setMinutes(setHours(new Date(), block[0].start_time), 0),
-                  0
-                ),
-                0
-              );
-              height = setMilliseconds(
-                setSeconds(
-                  setMinutes(setHours(new Date(), block[0].end_time), 0),
-                  0
-                ),
-                0
-              );
-              value = calculateBlockHeight(top, height);
-              console.log(value);
-            }
-            const specificMeetings = meetings.filter(
-              (m) =>
-                format(m.start_time, "dd:MM:yyyy") ===
-                format(item, "dd:MM:yyyy")
-            );
-            return (
-              <div
-                key={index}
-                style={{
-                  width: "14.2%",
-                  borderRight: `1px solid #d9d9d9`,
-                  borderLeft: `${index === 0 ? "1px" : "0px"} solid #D9D9D9`,
-                  position: "relative",
-                }}
-              >
-                {block.length > 0 && (
-                  <div
-                    style={{
-                      top: value.top,
-                      height: value.height,
-                      width: "100%",
-                      border: "1px solid orange",
-                      position: "absolute",
-                      zIndex: 1,
-                    }}
-                  ></div>
-                )}
-                {specificMeetings.length > 0 &&
-                  specificMeetings.map((call) => {
-                    const top = calculateTopHeight(call.start_time);
-                    const height = calculateDuration(
-                      call.start_time,
-                      call.end_time
-                    );
-                    return (
-                      <button
-                        onClick={() => {
-                          handleMeetingPress(call);
-                        }}
-                        key={call.id}
-                        style={{
-                          position: "absolute",
-                          top: top,
-                          height: height,
-                          width: "100%",
-                          backgroundColor: "#0795FF",
-                          padding: 10,
-                          display: "flex",
-                          alignItems: "flex-start",
-                          justifyContent: "flex-start",
-                          borderBottom: "1px solid white",
-                          zIndex: 100,
-                        }}
-                      >
-                        <p style={{ color: "white" }}>
-                          {format(call.start_time, "hh:mm") +
-                            " - " +
-                            format(call.end_time, "hh:mm")}
-                        </p>
-                      </button>
-                    );
-                  })}
-                {times.map((tIndex) => (
-                  <div
-                    key={tIndex}
-                    style={{
-                      height: 80,
-                      width: "100%",
-                      borderBottom: `1px solid #d9d9d9`,
-                    }}
-                  />
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-
-  const calendar = () => (
-    <div
-      style={{
-        width:
-          showSideBar === false
-            ? dimensions.width - 40
-            : (dimensions.width - 60) * 0.66,
-        height: dimensions.height - 100,
-        borderRadius: 10,
-        border: "1px solid #d9d9d9",
-        paddingBottom: 20,
-        flexDirection: "column",
-        display: "flex",
-        paddingRight: 20,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          height: "100%",
-          width: "100%",
-          marginRight: 20,
-        }}
-      >
-        {grid()}
-      </div>
-    </div>
-  );
-
-  const sidePannel = () => (
-    <div
-      style={{
-        width: (dimensions.width - 60) * 0.34,
-        height: dimensions.height - 100,
-        borderRadius: 10,
-        border: "1px solid #d9d9d9",
-        padding:
-          sideBarContent === "Select" || sideBarContent === "Meeting" ? 0 : 20,
-        position: "relative",
-        alignItems: "center",
-        justifyContent: "center",
-        display: "flex",
-      }}
-    >
-      {loading === true && (
-        <div
-          style={{
-            position: "absolute",
-            padding: 10,
-            border: "1px solid #d9d9d9",
-            backgroundColor: "white",
-            borderRadius: 10,
-          }}
-        >
-          <SyncLoader size={7} />
-        </div>
-      )}
-
-      {sideBarContent === "Meeting" ? (
-        meetingInformation !== null && (
-          <MeetingDetails
-            meeting={meetingInformation}
-            name={account.name}
-            meetings={meetings}
-          />
-        )
-      ) : sideBarContent === "Settings" ? (
-        <SettingsPanel
-          height={dimensions.height - 100}
-          email={account.username}
+  const renderBlock = () => (
+    <div className="flex flex-col pb-[10px] border-b border-x rounded-md border-[#d9d9d9] gap-[10px]">
+      <div className="grid grid-cols-2 gap-[10px] relative h-9 rounded-md overflow-clip border-y border-[#d9d9d9]">
+        <motion.div
+          className="w-1/2 h-full bg-[#0795ff] absolute"
+          animate={{ left: blockRender === false ? 0 : "50%" }}
         />
-      ) : (
-        <SelectAll
-          meetings={meetings.filter(
-            (meet) =>
-              format(meet.date, "dd/MM/yyyy") ===
-              format(selectedDate, "dd/MM/yyyy")
-          )}
-          date={selectedDate}
-          height={dimensions.height - 100}
-          name={account.name}
-        />
-      )}
+        <motion.button
+          className="text-sm font-[400] z-10"
+          animate={{ color: blockRender === true ? "black" : "white" }}
+          onClick={() => {
+            setBlockRender(false);
+          }}
+        >
+          Blocks
+        </motion.button>
+        <motion.button
+          className="text-sm font-[400] z-10"
+          animate={{ color: blockRender === false ? "black" : "white" }}
+          onClick={() => {
+            setBlockRender(true);
+          }}
+        >
+          Instance
+        </motion.button>
+      </div>
+      <div className="flex max-h-[200px] px-[10px]">
+        <div className="flex flex-col w-full gap-[10px]">
+          {blockRender === false
+            ? blocks.map((item, index) => {
+                return (
+                  <button
+                    onClick={() => {
+                      callPopup();
+                    }}
+                    key={index}
+                    className="w-full border border-[#d9d9d9] justify-start px-3 py-1 rounded-md flex flex-col gap-[10px]"
+                  >
+                    <div className="grid grid-cols-2">
+                      <p className="text-sm font-[400] flex justify-start">
+                        <span className="text-[#a8a8a8] mr-[5px]">Title: </span>
+                        {item.title}
+                      </p>
+                      <p className="text-sm font-[400] flex justify-end">
+                        <span className="text-[#a8a8a8] mr-[5px]">Type: </span>
+                        {item.type === true ? "Recurring" : "One-off"}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <p className="text-sm font-[400] flex justify-start">
+                        <span className="text-[#a8a8a8] mr-[5px]">
+                          Start time:{" "}
+                        </span>
+                        {item.start_time > 12
+                          ? (item.start_time - 2)[1] + ":00pm"
+                          : item.start_time + ":00am"}
+                      </p>
+                      <p className="text-sm font-[400] flex justify-end">
+                        <span className="text-[#a8a8a8] mr-[5px]">
+                          End time:{" "}
+                        </span>
+                        {item.end_time > 12
+                          ? (item.end_time - 2).toString()[1] + ":00pm"
+                          : item.end_time + ":00am"}{" "}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <p className="text-sm font-[400] flex justify-start">
+                        <span className="text-[#a8a8a8] mr-[5px]">
+                          Start date:{" "}
+                        </span>
+                        {format(item.date, "eee, dd, MMM")}
+                      </p>
+                      <p className="text-sm font-[400] flex justify-end">
+                        <span className="text-[#a8a8a8] mr-[5px]">
+                          End date:{" "}
+                        </span>
+                        {format(
+                          addWeeks(item.date, item.recurring_length),
+                          "eee, dd, MMM"
+                        )}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })
+            : blockDates.map((item, index) => {
+                return (
+                  <button
+                    onClick={() => {
+                      callPopup();
+                    }}
+                    key={index}
+                    className="w-full border border-[#d9d9d9] justify-start px-3 py-1 rounded-md flex flex-col gap-[10px]"
+                  >
+                    <div className="grid grid-cols-2">
+                      <p className="text-sm font-[400] flex justify-start">
+                        <span className="text-[#a8a8a8] mr-[5px]">Title: </span>
+                        {item.title}
+                      </p>
+                      <p className="text-sm font-[400] flex justify-end">
+                        <span className="text-[#a8a8a8] mr-[5px]">Date: </span>
+                        {format(item.date, "eee, d, MMM")}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <p className="text-sm font-[400] flex justify-start">
+                        <span className="text-[#a8a8a8] mr-[5px]">
+                          Start time:{" "}
+                        </span>
+                        {item.start_time > 12
+                          ? (item.start_time - 2)[1] + ":00pm"
+                          : item.start_time + ":00am"}
+                      </p>
+                      <p className="text-sm font-[400] flex justify-end">
+                        <span className="text-[#a8a8a8] mr-[5px]">
+                          End time:{" "}
+                        </span>
+                        {item.end_time > 12
+                          ? (item.end_time - 2).toString()[1] + ":00pm"
+                          : item.end_time + ":00am"}{" "}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+        </div>
+      </div>
     </div>
   );
 
-  const renderCalendar = () => {
-    return (
-      <div style={{ display: "flex" }}>
-        {calendar()}
-        {showSideBar === true && <div style={{ width: 20 }} />}
-        {showSideBar === true && sidePannel()}
-      </div>
-    );
-  };
+  const renderMeetings = () => <div></div>;
 
   return (
-    <div className="fixed w-screen h-[calc(100vh-60px)]">
-      <div
-        style={{
-          padding: 20,
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-        }}
-      >
-        {renderCalendar()}
+    <div className="w-screen h-[calc(100vh-60px)] flex flex-row p-5 gap-5">
+      <div className="w-2/3 h-full border border-[#d9d9d9] flex flex-col pr-5 pb-5 rounded-md items-start">
+        <div className="w-full flex flex-row h-[80px]">
+          <div className="w-[80px]" />
+          <div className="w-full grid grid-cols-7">
+            {daysOfTheWeek.map((item, index) => {
+              return (
+                <div
+                  key={index}
+                  className="w-full flex items-center pt-5 flex-col"
+                  style={
+                    {
+                      // borderLeft:
+                      //   index === 0 ? "1px solid #d9d9d9" : "0px solid #d9d9d9",
+                      // borderRight: "1px solid #d9d9d9",
+                    }
+                  }
+                >
+                  <p className="text-sm font-[400]">{format(item, "eeee")}</p>
+                  <p className="text-base font-[400]">{format(item, "d")}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="w-full h-full flex flex-row relative">
+          <div className="w-[calc(100%-80px)] h-full border border-[#d9d9d9] z-0 absolute rounded-md flex right-0 top-0" />
+          <div className="relative w-full h-[calc(100vh-199px)] rounded-md overflow-auto scrollbar-hide z-1">
+            {times.map((item, index) => {
+              return (
+                <div
+                  key={index}
+                  className="h-[100px] w-full relative flex flex-row z-3"
+                >
+                  <div className="w-[80px] h-full relative justify-center flex">
+                    <p className="text-xs font-[400]">{item}</p>
+                  </div>
+                  <div
+                    className="h-full w-[calc(100%-80px)] relative flex-row grid grid-cols-7"
+                    style={{
+                      borderBottom:
+                        index + 1 < times.length
+                          ? "1px solid #d9d9d9"
+                          : "0px solid #d9d9d9",
+                    }}
+                  >
+                    {daysOfTheWeek.map((item, dIndex) => {
+                      return (
+                        <div
+                          key={dIndex}
+                          className="border-r border-[#d9d9d9] h-full"
+                        ></div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <div className="w-1/3 border border-[#d9d9d9] h-full rounded-md p-5 flex flex-col gap-5">
+        <div className="grid grid-cols-2 border h-9 rounded-md border-[#d9d9d9] relative overflow-clip">
+          <motion.div
+            className="w-1/2 bg-[#0795ff] absolute h-9"
+            animate={{ left: panelRender === true ? "50%" : 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <button
+            className="z-10"
+            onClick={() => {
+              setPanelRender(false);
+            }}
+          >
+            <motion.p
+              className="text-sm font-[400]"
+              animate={{ color: panelRender === true ? "black" : "white" }}
+            >
+              Blocks
+            </motion.p>
+          </button>
+          <button
+            className="z-10"
+            onClick={() => {
+              setPanelRender(true);
+            }}
+          >
+            <motion.p
+              className="text-sm font-[400]"
+              animate={{ color: panelRender === true ? "white" : "black" }}
+            >
+              Meetings
+            </motion.p>
+          </button>
+        </div>
+        {panelRender === false ? renderBlock() : renderMeetings()}
       </div>
     </div>
   );

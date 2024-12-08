@@ -10,11 +10,7 @@ const AuthConfigProvider = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-  return (
-    <MsalProvider instance={msalInstance}>
-      <body>{children}</body>
-    </MsalProvider>
-  );
+  return <MsalProvider instance={msalInstance}>{children}</MsalProvider>;
 };
 
 export default AuthConfigProvider;
