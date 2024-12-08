@@ -25,7 +25,6 @@ import { useGlobal } from "../context/global";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import MSEncrypt, { encryptText } from "../encryption/encrypt";
 
 type meeting = {
   id: number;
@@ -82,11 +81,6 @@ const Cal = () => {
       router.push("./");
     }
   }, [instance, accounts]);
-
-  useEffect(() => {
-    const valuee = encryptText("Hello world");
-    console.log(valuee);
-  }, []);
 
   useEffect(() => {
     if (closeSelect === true) {
@@ -422,10 +416,10 @@ const Cal = () => {
 
   return (
     <div className="w-screen h-[calc(100vh-60px)] flex flex-row p-5 gap-5">
-      <div className="w-2/3 h-full border border-[#d9d9d9] flex flex-col pr-5 pb-5 rounded-md items-start">
+      <div className="w-1/2 lg:w-2/3  h-full border border-[#d9d9d9] flex flex-col pr-5 pb-5 rounded-md items-start">
         <div className="w-full flex flex-row h-[80px]">
           <div className="w-[80px]" />
-          <div className="w-full grid grid-cols-7">
+          <div className="w-full grid-cols-7 hidden lg:grid">
             {daysOfTheWeek.map((item, index) => {
               return (
                 <div
@@ -445,44 +439,90 @@ const Cal = () => {
               );
             })}
           </div>
+          <div className="w-full flex lg:hidden">
+            <div className="w-full flex items-center pt-5 flex-col">
+              <p className="text-sm font-[400]">{format(movingDate, "eeee")}</p>
+              <p className="text-base font-[400]">{format(movingDate, "d")}</p>
+            </div>
+          </div>
         </div>
         <div className="w-full h-full flex flex-row relative">
           <div className="w-[calc(100%-80px)] h-full border border-[#d9d9d9] z-0 absolute rounded-md flex right-0 top-0" />
-          <div className="relative w-full h-[calc(100vh-199px)] rounded-md overflow-auto scrollbar-hide z-1">
-            {times.map((item, index) => {
-              return (
-                <div
-                  key={index}
-                  className="h-[100px] w-full relative flex flex-row z-3"
-                >
-                  <div className="w-[80px] h-full relative justify-center flex">
-                    <p className="text-xs font-[400]">{item}</p>
-                  </div>
+          <div className="relative w-full h-[calc(100vh-196px)] rounded-md overflow-auto scrollbar-hide z-1 flex flex-row">
+            <div
+              className="flex flex-col w-[80px]"
+              style={{ height: 100 * times.length }}
+            >
+              {times.map((item, index) => {
+                return (
                   <div
-                    className="h-full w-[calc(100%-80px)] relative flex-row grid grid-cols-7"
+                    key={index}
+                    className="h-[100px] w-full relative flex flex-row z-3"
+                  >
+                    <div className="w-[80px] h-full relative justify-center flex">
+                      <p className="text-xs font-[400]">{item}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div
+              className="w-full grid-cols-7 h-full hidden lg:grid rounded-md overflow-clip"
+              style={{ height: 100 * times.length }}
+            >
+              {daysOfTheWeek.map((item, index) => {
+                return (
+                  <div
+                    key={index}
+                    className="w-full relative flex flex-row z-3 h-full border-r border-[#d9d9d9]"
+                  >
+                    {index === 0 && (
+                      <div className="bg-black w-full absolute top-[000px] h-[100px]" />
+                    )}
+                    <div className="h-full w-full relative flex flex-col">
+                      {times.map((item, dIndex) => {
+                        return (
+                          <div
+                            key={dIndex}
+                            className="h-full hidden lg:flex relative"
+                            style={{
+                              borderBottom:
+                                dIndex + 1 < times.length
+                                  ? "1px solid #d9d9d9"
+                                  : "0px solid #d9d9d9",
+                            }}
+                          ></div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div
+              className="w-full flex flex-col lg:hidden relative rounded-md overflow-clip"
+              style={{ height: 100 * times.length }}
+            >
+              <div className="bg-black w-full absolute top-[0] h-[33px]" />
+              {times.map((item, index) => {
+                return (
+                  <div
+                    key={index}
+                    className="h-[100px] w-full relative flex flex-row z-3"
                     style={{
                       borderBottom:
                         index + 1 < times.length
                           ? "1px solid #d9d9d9"
-                          : "0px solid #d9d9d9",
+                          : "0px solid white",
                     }}
-                  >
-                    {daysOfTheWeek.map((item, dIndex) => {
-                      return (
-                        <div
-                          key={dIndex}
-                          className="border-r border-[#d9d9d9] h-full"
-                        ></div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+                  ></div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
-      <div className="w-1/3 border border-[#d9d9d9] h-full rounded-md p-5 flex flex-col gap-5">
+      <div className="w-1/2 lg:w-1/3 border border-[#d9d9d9] h-full rounded-md p-5 flex flex-col gap-5">
         <div className="grid grid-cols-2 border h-9 rounded-md border-[#d9d9d9] relative overflow-clip">
           <motion.div
             className="w-1/2 bg-[#0795ff] absolute h-9"

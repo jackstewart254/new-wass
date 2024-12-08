@@ -31,13 +31,10 @@ const Header = () => {
     }
   };
 
-  const handleUpdateMovingDate = (plan: number) => {
-    if (plan === 0) {
-      setGlobal({ ...global, movingDate: addDays(movingDate, -7) });
-    }
-    if (plan === 1) {
-      setGlobal({ ...global, movingDate: addDays(movingDate, 7) });
-    }
+  const handleUpdateMovingDate = (plan: number, move: number) => {
+    const value = plan === 0 ? (move === 0 ? -1 : -7) : move === 1 ? 1 : 7;
+    console.log(value);
+    setGlobal({ ...global, movingDate: addDays(movingDate, value) });
   };
 
   return (
@@ -66,19 +63,40 @@ const Header = () => {
             }}
           >
             <button
+              className="hidden lg:flex"
               onClick={() => {
-                handleUpdateMovingDate(0);
+                handleUpdateMovingDate(0, 1);
               }}
             >
               {leftChevron(12)}
             </button>
-            <p className="text-sm font-[400] mx-[10px]">
+            <button
+              className="lg:hidden"
+              onClick={() => {
+                handleUpdateMovingDate(0, 0);
+              }}
+            >
+              {leftChevron(12)}
+            </button>
+            <p className="text-sm font-[400] mx-[10px] hidden lg:flex">
               {format(startOfWeek(movingDate, { weekStartsOn: 1 }), "d MMM")} -{" "}
               {format(endOfWeek(movingDate, { weekStartsOn: 1 }), "d MMM")}
             </p>
+            <p className="text-sm font-[400] mx-[10px] lg:hidden">
+              {format(movingDate, "d MMM")}
+            </p>
             <button
+              className="hidden lg:flex"
               onClick={() => {
-                handleUpdateMovingDate(1);
+                handleUpdateMovingDate(1, 0);
+              }}
+            >
+              {rightChevron(12)}
+            </button>
+            <button
+              className="lg:hidden flex"
+              onClick={() => {
+                handleUpdateMovingDate(1, 1);
               }}
             >
               {rightChevron(12)}
