@@ -11,7 +11,7 @@ export const GlobalProvider = ({ children }) => {
     movingDate: new Date(),
     showPopup: false,
     popupContentType: "block", //block, date, new, edit and meeting
-    popupContent: {}, 
+    popupContent: undefined, 
   });
 
   return (

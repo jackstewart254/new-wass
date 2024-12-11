@@ -25,29 +25,8 @@ import { useGlobal } from "../context/global";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-
-type meeting = {
-  id: number;
-  created_at: Date;
-  staff_id: string;
-  student_id: string;
-  start_time: Date;
-  end_time: Date;
-  meeting_purpose: string;
-};
-
-type blockDates = {
-  id: string;
-  created_at: Date;
-  staff_id: string;
-  type: boolean;
-  date: Date;
-  appointment_duration: number;
-  recurring_length: number;
-  title: string;
-  start_time: number;
-  end_time: number;
-};
+import Meeting from "../types/meeting";
+import Block from "../types/block";
 
 const Cal = () => {
   const { global, setGlobal } = useGlobal();
@@ -56,7 +35,7 @@ const Cal = () => {
   const [sideBarContent, setSideBarContent] = useState<String>();
   const constantDate = new Date();
   const [daysOfTheWeek, setDaysOfTheWeek] = useState<Date[]>([]);
-  const [meetings, setMeetings] = useState([]);
+  const [meetings, setMeetings] = useState<Block[]>();
   const authenticate = useIsAuthenticated();
   const { instance, accounts } = useMsal();
   const [accessToken, setAccessToken] = useState(null);
@@ -66,7 +45,7 @@ const Cal = () => {
   const [meetingInformation, setMeetingInformation] = useState(null);
   const [pressedId, setPressedId] = useState<number>();
   const [loading, setLoading] = useState<boolean>();
-  const [blockDates, setBlockDates] = useState<blockDates[]>([]);
+  const [blockDates, setBlockDates] = useState<Block[]>([]);
   const [panelRender, setPanelRender] = useState<boolean>(false);
   const [blockRender, setBlockRender] = useState<boolean>(false);
 
@@ -100,8 +79,22 @@ const Cal = () => {
     }
   }, [account]);
 
-  const callPopup = () => {
-    setGlobal({ ...global, showPopup: true });
+  const setBlockPopup = (content: Block) => {
+    setGlobal({
+      ...global,
+      showPopup: true,
+      popupContentType: "block",
+      popupContent: content,
+    });
+  };
+
+  const setBlockDatePopup = (content: Meeting) => {
+    setGlobal({
+      ...global,
+      showPopup: true,
+      popupContentType: "date",
+      popupContent: content,
+    });
   };
 
   const fetchAccountRouting = async (email: string) => {
@@ -114,12 +107,13 @@ const Cal = () => {
 
   const callFetchBlocks = async (email: string) => {
     const response = await fetchBlocks(email);
-    console.log(response.data.data.blocks);
+    console.log("blocks", response.data.data.blocks);
+    console.log("blockDates", response.data.data.blockDates);
     setGlobal({ ...global, blocks: response.data.data.blocks });
     setBlockDates(response.data.data.blockDates);
   };
 
-  const handleMeetingPress = (meeting: meeting) => {
+  const handleMeetingPress = (meeting: Meeting) => {
     setLoading(true);
     setPressedId(meeting.id);
     setSideBarContent("Meeting");
@@ -314,7 +308,7 @@ const Cal = () => {
                 return (
                   <button
                     onClick={() => {
-                      callPopup();
+                      setBlockPopup(item);
                     }}
                     key={index}
                     className="w-full border border-[#d9d9d9] justify-start px-3 py-1 rounded-md flex flex-col gap-[10px]"
@@ -368,10 +362,11 @@ const Cal = () => {
                 );
               })
             : blockDates.map((item, index) => {
+                console.log("index", index, item);
                 return (
                   <button
                     onClick={() => {
-                      callPopup();
+                      setBlockDatePopup(item);
                     }}
                     key={index}
                     className="w-full border border-[#d9d9d9] justify-start px-3 py-1 rounded-md flex flex-col gap-[10px]"
