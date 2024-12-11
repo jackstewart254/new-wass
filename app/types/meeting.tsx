@@ -3,8 +3,8 @@ type Meeting = {
   created_at: Date;
   staff_id: string;
   student_id: string;
-  start_time: Date;
-  end_time: Date;
+  start_time: number;
+  end_time: number;
   meeting_purpose: string;
 };
 

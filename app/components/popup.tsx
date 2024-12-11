@@ -4,16 +4,21 @@ import { useGlobal } from "../context/global";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 
+import Meeting from "../types/meeting";
+import Block from "../types/block";
+
 const Popup = () => {
   const { global, setGlobal } = useGlobal();
   const { showPopup, popupContentType, popupContent } = global;
   const time = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+  const weeks = [1, 2, 3, 4];
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [dropdownContent, setDropdownContent] = useState<string>();
+  const [content, setContent] = useState<Block>();
 
   useEffect(() => {
-    console.log(popupContent, popupContentType);
-  }, [popupContentType, popupContent]);
+    setContent(popupContent);
+  }, [popupContent]);
 
   const returnTimeOfDay = (time: number) => {
     console.log(time);
@@ -30,46 +35,211 @@ const Popup = () => {
 
   const handleDropdownPress = (content: string) => {
     if (content === dropdownContent) {
-      // Toggle dropdown visibility when the same content is pressed
       setShowDropdown(!showDropdown);
     } else {
-      // Update the content and ensure dropdown is visible
       setDropdownContent(content);
       setShowDropdown(true);
     }
   };
 
+  const handleSelectTime = (time: number, property: boolean) => {
+    if (property === false) {
+      setContent({ ...content, start_time: time });
+    } else {
+      setContent({ ...content, end_time: time });
+    }
+    handleDropdownPress(property === true ? "endtime" : "starttime");
+  };
+
+  const handleUpdateRecurringLength = (length: number) => {
+    setContent({ ...content, recurring_length: length });
+    handleDropdownPress("length");
+  };
+
   const dropdown = () => {
     return (
       <motion.div
-        className="absolute top-[40px] border border-[#d9d9d9] bg-white rounded-md z-10 h-[calc(100vh/5)] overflow-auto no-scrollbar"
+        className="absolute top-[38px] border border-[#d9d9d9] bg-white rounded-md z-10 max-h-[calc(100vh/5)] overflow-auto no-scrollbar"
         initial={{ opacity: 0 }}
         animate={{ opacity: showDropdown === true ? 1 : 0 }}
         style={{ width: dropdownContent === "date" ? "75%" : "100%" }}
       >
-        {time.map((item, index) => {
-          return (
-            <div key={index} className="w-full">
-              <button
-                className="py-1 px-3 w-full flex items-start"
-                style={{
-                  borderBottom:
-                    index + 1 < time.length
-                      ? "1px solid #d9d9d9"
-                      : "0px solid white",
-                }}
-              >
-                <p className="text-sm font-[400]">
-                  {item > 12
-                    ? (item - 2).toString()[1] + ":00pm"
-                    : item === 12
-                    ? "12:00pm"
-                    : item + ":00am"}
-                </p>
-              </button>
-            </div>
-          );
-        })}
+        {dropdownContent === "starttime" ? (
+          time.map((item, index) => {
+            return (
+              <div key={index} className="w-full">
+                {item < content.end_time ? (
+                  <button
+                    onClick={() => {
+                      handleSelectTime(item, false);
+                    }}
+                    className="py-1 px-3 w-full flex items-start"
+                    style={{
+                      backgroundColor:
+                        content.start_time === item ? "#0795FF" : "white",
+                      borderBottom:
+                        index + 1 < time.length
+                          ? "1px solid #d9d9d9"
+                          : "0px solid white",
+                    }}
+                  >
+                    <p
+                      className="text-sm font-[400]"
+                      style={{
+                        color: item === content?.start_time ? "white" : "black",
+                      }}
+                    >
+                      {item > 12
+                        ? (item - 2).toString()[1] + ":00pm"
+                        : item === 12
+                        ? "12:00pm"
+                        : item + ":00am"}
+                    </p>
+                  </button>
+                ) : (
+                  <div
+                    className="py-1 px-3 w-full flex items-start opacity-60"
+                    style={{
+                      borderBottom:
+                        index + 1 < time.length
+                          ? "1px solid #d9d9d9"
+                          : "0px solid white",
+                    }}
+                  >
+                    <p className="text-sm font-[400]">
+                      {item > 12
+                        ? (item - 2).toString()[1] + ":00pm"
+                        : item === 12
+                        ? "12:00pm"
+                        : item + ":00am"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : dropdownContent === "endtime" ? (
+          time.map((item, index) => {
+            return (
+              <div key={index} className="w-full">
+                {item > content?.start_time ? (
+                  <button
+                    onClick={() => {
+                      handleSelectTime(item, true);
+                    }}
+                    className="py-1 px-3 w-full flex items-start"
+                    style={{
+                      backgroundColor:
+                        content?.end_time === item ? "#0795FF" : "white",
+                      borderBottom:
+                        index + 1 < time.length
+                          ? "1px solid #d9d9d9"
+                          : "0px solid white",
+                    }}
+                  >
+                    <p
+                      className="text-sm font-[400]"
+                      style={{
+                        color: item === content?.end_time ? "white" : "black",
+                      }}
+                    >
+                      {item > 12
+                        ? (item - 2).toString()[1] + ":00pm"
+                        : item === 12
+                        ? "12:00pm"
+                        : item + ":00am"}
+                    </p>
+                  </button>
+                ) : (
+                  <div
+                    className="py-1 px-3 w-full flex items-start opacity-60"
+                    style={{
+                      borderBottom:
+                        index + 1 < time.length
+                          ? "1px solid #d9d9d9"
+                          : "0px solid white",
+                    }}
+                  >
+                    <p className="text-sm font-[400]">
+                      {item > 12
+                        ? (item - 2).toString()[1] + ":00pm"
+                        : item === 12
+                        ? "12:00pm"
+                        : item + ":00am"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : dropdownContent === "date" ? (
+          <div></div>
+        ) : dropdownContent === "length" ? (
+          weeks.map((item, index) => {
+            return (
+              <div key={index} className="w-full">
+                {item === content.recurring_length ? (
+                  <div
+                    className="flex px-3 py-1 items-center justify-center w-full"
+                    style={{
+                      backgroundColor:
+                        content?.recurring_length === item
+                          ? "#0795FF"
+                          : "white",
+                      borderBottom:
+                        index + 1 < weeks.length
+                          ? "1px solid #d9d9d9"
+                          : "1px solid white",
+                    }}
+                  >
+                    <p
+                      className="text-sm font-[400]"
+                      style={{
+                        color:
+                          content?.recurring_length === item
+                            ? "white"
+                            : "black",
+                      }}
+                    >
+                      {item}
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      handleUpdateRecurringLength(item);
+                    }}
+                    className="flex px-3 py-1 items-center justify-center w-full"
+                    style={{
+                      backgroundColor:
+                        content?.recurring_length === item
+                          ? "#0795FF"
+                          : "white",
+                      borderBottom:
+                        index + 1 < weeks.length
+                          ? "1px solid #d9d9d9"
+                          : "1px solid white",
+                    }}
+                  >
+                    <p
+                      className="text-sm font-[400]"
+                      style={{
+                        color:
+                          content?.recurring_length === item
+                            ? "white"
+                            : "black",
+                      }}
+                    >
+                      {item}
+                    </p>
+                  </button>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <div></div>
+        )}
       </motion.div>
     );
   };
@@ -93,10 +263,10 @@ const Popup = () => {
     <div className="w-full h-full gap-[10px] flex flex-col">
       <div className="w-full flex flex-row justify-between">
         <p className="text-base font-[400]">
-          Edit <span className="font-[500]">{popupContent.title}</span>
+          Edit <span className="font-[500]">{content.title}</span>
         </p>
         <p className="text-sm font-[400]">
-          {popupContent.type === true ? "Recurring" : "One-off"}
+          {content.type === true ? "Recurring" : "One-off"}
         </p>
       </div>
       <div className="flex flex-col gap-[5px]">
@@ -113,7 +283,7 @@ const Popup = () => {
               }}
             >
               <p className="text-sm font-[400]">
-                {format(popupContent.date, "EEEE, d, MMMM")}
+                {format(content.date, "EEEE, d, MMMM")}
               </p>
             </button>
             {dropdownContent === "date" && dropdown()}
@@ -125,9 +295,7 @@ const Popup = () => {
                 handleDropdownPress("length");
               }}
             >
-              <p className="text-sm font-[400]">
-                {popupContent.recurring_length}
-              </p>
+              <p className="text-sm font-[400]">{content.recurring_length}</p>
             </button>
             {dropdownContent === "length" && dropdown()}
           </div>
@@ -147,7 +315,7 @@ const Popup = () => {
               }}
             >
               <p className="text-sm font-[400]">
-                {returnTimeOfDay(popupContent.start_time)}
+                {returnTimeOfDay(content.start_time)}
               </p>
             </button>
             {dropdownContent === "starttime" && dropdown()}
@@ -160,7 +328,7 @@ const Popup = () => {
               }}
             >
               <p className="text-sm font-[400]">
-                {returnTimeOfDay(popupContent.end_time)}
+                {returnTimeOfDay(content.end_time)}
               </p>
             </button>
             {dropdownContent === "endtime" && dropdown()}
@@ -201,7 +369,7 @@ const Popup = () => {
           </p>
         </div>
         <div className="w-full h-auto bg-white z-10 rounded-md border border-[#d9d9d9] flex flex-col p-5">
-          {popupContent !== undefined && popupContentType === "block" ? (
+          {content !== undefined && popupContentType === "block" ? (
             blockRender()
           ) : popupContentType === "date" ? (
             dateRender()
