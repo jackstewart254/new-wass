@@ -2,10 +2,17 @@
 import { motion } from "motion/react";
 import { useGlobal } from "../context/global";
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import {
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  format,
+  addMonths,
+} from "date-fns";
 
 import Meeting from "../types/meeting";
 import Block from "../types/block";
+import { leftChevron, rightChevron } from "../calendar/components/svg";
 
 const Popup = () => {
   const { global, setGlobal } = useGlobal();
@@ -15,10 +22,41 @@ const Popup = () => {
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [dropdownContent, setDropdownContent] = useState<string>();
   const [content, setContent] = useState<Block>();
+  const [daysInMonth, setDaysInMonth] = useState<Date[]>();
+  const [movingDate, setMovingDate] = useState<Date>();
+  const today = new Date();
+  const [changes, setChanges] = useState<boolean>(false);
 
   useEffect(() => {
-    setContent(popupContent);
+    if (popupContent !== undefined) {
+      setMovingDate(popupContent.date);
+      setContent(popupContent);
+      generateDatesInMonth(popupContent.date);
+    }
   }, [popupContent]);
+
+  useEffect(() => {
+    const val = compareObjectValues();
+  }, [content]);
+
+  const compareObjectValues = () => {
+    for (let key in content) {
+      console.log("content:", content[key], "popup:", popupContent[key]);
+      if (content[key] !== popupContent[key]) {
+        setChanges(true);
+        return false;
+      }
+    }
+    setChanges(false);
+    return true;
+  };
+
+  const generateDatesInMonth = (inputDate: Date) => {
+    const start = startOfMonth(new Date(inputDate));
+    const end = endOfMonth(new Date(inputDate));
+    const datesArray = eachDayOfInterval({ start, end });
+    setDaysInMonth(datesArray);
+  };
 
   const returnTimeOfDay = (time: number) => {
     console.log(time);
@@ -56,13 +94,42 @@ const Popup = () => {
     handleDropdownPress("length");
   };
 
+  const handleUpdatingDIM = (call: boolean) => {
+    if (call === true) {
+      const newDate = addMonths(movingDate, 1);
+      setMovingDate(newDate);
+      generateDatesInMonth(newDate);
+    } else {
+      const newDate = addMonths(movingDate, -1);
+      setMovingDate(newDate);
+      generateDatesInMonth(newDate);
+    }
+  };
+
+  const handleSelectDate = (date: Date) => {
+    setContent({ ...content, date: date });
+    handleDropdownPress("date");
+  };
+
   const dropdown = () => {
     return (
       <motion.div
-        className="absolute top-[38px] border border-[#d9d9d9] bg-white rounded-md z-10 max-h-[calc(100vh/5)] overflow-auto no-scrollbar"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showDropdown === true ? 1 : 0 }}
-        style={{ width: dropdownContent === "date" ? "75%" : "100%" }}
+        className="absolute top-[38px] rounded-md z-10 max-h-[calc(100vh/5)] overflow-auto no-scrollbar"
+        initial={{ opacity: 0, height: 0 }}
+        animate={{
+          opacity: showDropdown === true ? 1 : 0,
+          height: showDropdown === true ? "auto" : 0,
+        }}
+        transition={{ duration: 0.2 }}
+        style={{
+          width: dropdownContent === "date" ? "100%" : "100%",
+          backgroundColor: dropdownContent === "date" ? "transparent" : "white",
+          border:
+            dropdownContent === "date"
+              ? "0px solid white"
+              : "1px solid #d9d9d9",
+          // height: showDropdown === true ? "auto" : 0,
+        }}
       >
         {dropdownContent === "starttime" ? (
           time.map((item, index) => {
@@ -173,8 +240,75 @@ const Popup = () => {
             );
           })
         ) : dropdownContent === "date" ? (
-          <div></div>
-        ) : dropdownContent === "length" ? (
+          <div className="flex flex-row gap-[10px] items-start">
+            <div className="w-[70%] h-full grid grid-cols-7 grid-auto-rows bg-white rounded-md border border-[#d9d9d9] overflow-clip">
+              {daysInMonth?.map((item, index) => {
+                return (
+                  <button
+                    onClick={() => {
+                      handleSelectDate(item);
+                    }}
+                    key={index}
+                    className="w-full flex items-center justify-center py-1"
+                    style={{
+                      borderRight:
+                        (index + 1) % 7 === 0
+                          ? "0px solid white"
+                          : "1px solid #d9d9d9",
+                      borderBottom:
+                        index + 1 > 28
+                          ? "0px solid white"
+                          : "1px solid #d9d9d9",
+                      backgroundColor:
+                        format(item, "dd:MM:yyyy") ===
+                        format(content?.date, "dd:MM:yyyy")
+                          ? "#0795FF"
+                          : format(item, "dd:MM:yyyy") ===
+                            format(today, "dd:MM:yyyy")
+                          ? "#d9d9d9"
+                          : "transparent",
+                    }}
+                  >
+                    <p
+                      className="text-sm font-[400]"
+                      style={{
+                        color:
+                          format(item, "dd:MM:yyyy") ===
+                          format(content?.date, "dd:MM:yyyy")
+                            ? "white"
+                            : "black",
+                      }}
+                    >
+                      {format(item, "d")}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="w-[30%] rounded-md border border-[#d9d9d9] bg-white flex flex-row py-1 px-3 items-center">
+              <button
+                onClick={() => {
+                  handleUpdatingDIM(false);
+                }}
+              >
+                {leftChevron(12)}
+              </button>
+              <p className="w-full text-center text-sm font-[400]">
+                {format(movingDate, "MMMM")}
+              </p>
+              <button
+                onClick={() => {
+                  handleUpdatingDIM(true);
+                }}
+              >
+                {rightChevron(12)}
+              </button>
+            </div>
+          </div>
+        ) : // ) : (
+        //   <div></div>
+        // )
+        dropdownContent === "length" ? (
           weeks.map((item, index) => {
             return (
               <div key={index} className="w-full">
@@ -275,7 +409,7 @@ const Popup = () => {
           <p className="text-sm font-[400] text-[#a8a8a8]">Recurring length</p>
         </div>
         <div className="flex flex-row w-full gap-[10px]">
-          <div className="w-[90%] relative">
+          <div className="w-full relative">
             <button
               className="w-full flex items-start px-3 py-1 border border-[#d9d9d9] rounded-md justify-between"
               onClick={() => {
@@ -335,13 +469,31 @@ const Popup = () => {
           </div>
         </div>
       </div>
+      <div className="flex flex-col w-full gap-[5px]">
+        <div className="flex flex-row w-full justify-between">
+          <p className="text-sm font-[400] text-[#a8a8a8]">Meeting length</p>
+          <p className="text-sm font-[400] text-[#a8a8a8]">Meeting room</p>
+        </div>
+        <div className="w-full flex flex-row gap-[10px]">
+          <button className="border border-[#d9d9d9] w-[10%] rounded-md px-3 py-1 text-sm font-[400]">
+            <p>{content?.appointment_duration}</p>
+          </button>
+          <input className="border border-[#d9d9d9] w-full rounded-md px-3 py-1 text-sm font-[400] focus:border-[#0795FF]" />
+        </div>
+      </div>
       <div className="w-full flex flex-row rounded-md justify-between gap-[10px]">
         <button className="w-[30%] px-3 py-1 rounded-md bg-red-600">
           <p className="text-sm font-[400] text-white">Delete</p>
         </button>
-        <button className="w-[70%] bg-blue-700 px-3 py-1 rounded-md">
-          <p className="text-sm font-[400] text-white">Save</p>
-        </button>
+        {changes === true ? (
+          <button className="w-[70%] bg-[#0795FF] px-3 py-1 rounded-md">
+            <p className="text-sm font-[400] text-white">Save</p>
+          </button>
+        ) : (
+          <div className="w-[70%] bg-[#0795FF] px-3 py-1 rounded-md opacity-40 flex items-center justify-center">
+            <p className="text-sm font-[400] text-white">Save</p>
+          </div>
+        )}
       </div>
     </div>
   );
