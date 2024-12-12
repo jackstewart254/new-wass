@@ -9,6 +9,7 @@ type Block = {
   title: string;
   start_time: number;
   end_time: number;
+  room: string;
 };
 
 export default Block;

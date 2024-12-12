@@ -19,6 +19,7 @@ const Popup = () => {
   const { showPopup, popupContentType, popupContent } = global;
   const time = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
   const weeks = [1, 2, 3, 4];
+  const duration = [5, 10, 15, 20, 25, 30, 35, 40];
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [dropdownContent, setDropdownContent] = useState<string>();
   const [content, setContent] = useState<Block>();
@@ -111,10 +112,14 @@ const Popup = () => {
     handleDropdownPress("date");
   };
 
+  const updateMeetingRoom = (room: string) => {
+    setContent({ ...content, room: room });
+  };
+
   const dropdown = () => {
     return (
       <motion.div
-        className="absolute top-[38px] rounded-md z-10 max-h-[calc(100vh/5)] overflow-auto no-scrollbar"
+        className="absolute top-[38px] rounded-md z-10 max-h-[calc(100vh/5)] overflow-auto no-scrollbar w-full"
         initial={{ opacity: 0, height: 0 }}
         animate={{
           opacity: showDropdown === true ? 1 : 0,
@@ -122,7 +127,6 @@ const Popup = () => {
         }}
         transition={{ duration: 0.2 }}
         style={{
-          width: dropdownContent === "date" ? "100%" : "100%",
           backgroundColor: dropdownContent === "date" ? "transparent" : "white",
           border:
             dropdownContent === "date"
@@ -372,7 +376,22 @@ const Popup = () => {
             );
           })
         ) : (
-          <div></div>
+          duration.map((item, index) => {
+            return (
+              <button
+                key={index}
+                className="w-full items-center flex justify-center px-3 py-1"
+                style={{
+                  borderBottom:
+                    index + 1 < duration.length
+                      ? "1px solid #d9d9d9"
+                      : "0px solid #d9d9d9",
+                }}
+              >
+                <p className="text-sm font-[400]">{item}</p>
+              </button>
+            );
+          })
         )}
       </motion.div>
     );
@@ -471,14 +490,28 @@ const Popup = () => {
       </div>
       <div className="flex flex-col w-full gap-[5px]">
         <div className="flex flex-row w-full justify-between">
-          <p className="text-sm font-[400] text-[#a8a8a8]">Meeting length</p>
+          <p className="text-sm font-[400] text-[#a8a8a8]">Meeting duration</p>
           <p className="text-sm font-[400] text-[#a8a8a8]">Meeting room</p>
         </div>
         <div className="w-full flex flex-row gap-[10px]">
-          <button className="border border-[#d9d9d9] w-[10%] rounded-md px-3 py-1 text-sm font-[400]">
-            <p>{content?.appointment_duration}</p>
-          </button>
-          <input className="border border-[#d9d9d9] w-full rounded-md px-3 py-1 text-sm font-[400] focus:border-[#0795FF]" />
+          <div className="w-[10%] relative">
+            <button
+              onClick={() => {
+                handleDropdownPress("duration");
+              }}
+              className="border border-[#d9d9d9] w-full rounded-md px-3 py-1 text-sm font-[400]"
+            >
+              <p>{content?.appointment_duration}</p>
+            </button>
+            {dropdownContent === "duration" && dropdown()}
+          </div>
+          <input
+            className="border border-[#d9d9d9] w-full rounded-md px-3 py-1 text-sm font-[400] focus:border-[#0795FF]"
+            value={content?.room}
+            onChange={(event) => {
+              updateMeetingRoom(event.target.value);
+            }}
+          />
         </div>
       </div>
       <div className="w-full flex flex-row rounded-md justify-between gap-[10px]">
