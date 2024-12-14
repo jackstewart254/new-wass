@@ -6,7 +6,7 @@ import { useGlobal } from "../context/global";
 import { addDays, endOfWeek, format, startOfWeek } from "date-fns";
 import { leftChevron, rightChevron } from "../calendar/components/svg";
 import { useEffect, useState } from "react";
-import { accountRouting } from "../api/calls";
+import { accountRouting } from "../hooks/calls";
 
 const Header = () => {
   const { instance, accounts } = useMsal();
@@ -20,17 +20,6 @@ const Header = () => {
     router.push("./");
   };
 
-  useEffect(() => {
-    at();
-  }, [accounts]);
-
-  const at = async () => {
-    if (accounts !== undefined && accounts !== null) {
-      const res = await accountRouting(accounts[0].username);
-      setAdmin(res.data);
-    }
-  };
-
   const handleUpdateMovingDate = (plan: number, move: number) => {
     const value = plan === 0 ? (move === 0 ? -1 : -7) : move === 1 ? 1 : 7;
     console.log(value);
@@ -38,14 +27,7 @@ const Header = () => {
   };
 
   return (
-    <div
-      className="w-screen grid grid-cols-2 px-5 items-center"
-      style={{
-        height: admin === true ? 60 : 0,
-        borderBottom:
-          admin === true ? "1px solid #d9d9d9" : "0px solid #d9d9d9",
-      }}
-    >
+    <div className="w-screen grid grid-cols-2 px-5 items-center h-[60px] border-b border-[#d9d9d9]">
       <h1 className="text-2xl font-[600]">WASS2</h1>
       <div className="flex justify-end">
         {admin === true && (

@@ -18,8 +18,8 @@ import {
   fetchBlocks,
   fetchMeetingInfo,
   fetchMeetings,
-} from "../api/calls";
-import { loginRequest } from "../api/authConfig";
+} from "../hooks/calls";
+import { loginRequest } from "../hooks/authConfig";
 import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import { useGlobal } from "../context/global";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
@@ -27,10 +27,12 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import Meeting from "../types/meeting";
 import Block from "../types/block";
+import { validateUser } from "../hooks/validateUser";
+import Header from "../components/header";
 
 const Cal = () => {
   const { global, setGlobal } = useGlobal();
-  const { closeSelect, movingDate, blocks } = global;
+  const { closeSelect, movingDate, blocks, role } = global;
   const [showSideBar, setShowSideBar] = useState(false);
   const [sideBarContent, setSideBarContent] = useState<String>();
   const constantDate = new Date();
@@ -49,15 +51,21 @@ const Cal = () => {
   const [panelRender, setPanelRender] = useState<boolean>(false);
   const [blockRender, setBlockRender] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (instance && accounts.length > 0) {
-      instance.setActiveAccount(accounts[0]);
-      setAccount(accounts[0]);
-      setMsalInitialized(true);
-      fetchAccountRouting(accounts[0].username);
-      callFetchBlocks(accounts[0].username);
-    } else {
+  const callValidateUser = async () => {
+    const res = await validateUser(instance, accounts);
+    setGlobal({ ...global, role: res?.role });
+    if (res?.allow === false) {
       router.push("./");
+    }
+  };
+
+  useEffect(() => {
+    if (accounts.length > 0 && role === undefined) {
+      callValidateUser();
+    } else {
+      if (role === "false") {
+        router.push("./book");
+      }
     }
   }, [instance, accounts]);
 
@@ -313,7 +321,7 @@ const Cal = () => {
                     key={index}
                     className="w-full border border-[#d9d9d9] justify-start px-3 py-1 rounded-md flex flex-col gap-[10px]"
                   >
-                    <div className="grid grid-cols-2">
+                    <div className="flex flex-row justify-between w-full">
                       <p className="text-sm font-[400] flex justify-start">
                         <span className="text-[#a8a8a8] mr-[5px]">Title: </span>
                         {item.title}
@@ -323,7 +331,7 @@ const Cal = () => {
                         {item.type === true ? "Recurring" : "One-off"}
                       </p>
                     </div>
-                    <div className="grid grid-cols-2">
+                    <div className="flex flex-row justify-between w-full">
                       <p className="text-sm font-[400] flex justify-start">
                         <span className="text-[#a8a8a8] mr-[5px]">
                           Start time:{" "}
@@ -341,7 +349,7 @@ const Cal = () => {
                           : item.end_time + ":00am"}{" "}
                       </p>
                     </div>
-                    <div className="grid grid-cols-2">
+                    <div className="flex flex-row justify-between w-full">
                       <p className="text-sm font-[400] flex justify-start">
                         <span className="text-[#a8a8a8] mr-[5px]">
                           Start date:{" "}
@@ -410,148 +418,155 @@ const Cal = () => {
   const renderMeetings = () => <div></div>;
 
   return (
-    <div className="w-screen h-[calc(100vh-60px)] flex flex-row p-5 gap-5">
-      <div className="w-1/2 lg:w-2/3  h-full border border-[#d9d9d9] flex flex-col pr-5 pb-5 rounded-md items-start">
-        <div className="w-full flex flex-row h-[80px]">
-          <div className="w-[80px]" />
-          <div className="w-full grid-cols-7 hidden lg:grid">
-            {daysOfTheWeek.map((item, index) => {
-              return (
-                <div
-                  key={index}
-                  className="w-full flex items-center pt-5 flex-col"
-                  style={
-                    {
-                      // borderLeft:
-                      //   index === 0 ? "1px solid #d9d9d9" : "0px solid #d9d9d9",
-                      // borderRight: "1px solid #d9d9d9",
-                    }
-                  }
-                >
-                  <p className="text-sm font-[400]">{format(item, "eeee")}</p>
-                  <p className="text-base font-[400]">{format(item, "d")}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="w-full flex lg:hidden">
-            <div className="w-full flex items-center pt-5 flex-col">
-              <p className="text-sm font-[400]">{format(movingDate, "eeee")}</p>
-              <p className="text-base font-[400]">{format(movingDate, "d")}</p>
-            </div>
-          </div>
-        </div>
-        <div className="w-full h-full flex flex-row relative">
-          <div className="w-[calc(100%-80px)] h-full border border-[#d9d9d9] z-0 absolute rounded-md flex right-0 top-0" />
-          <div className="relative w-full h-[calc(100vh-196px)] rounded-md overflow-auto scrollbar-hide z-1 flex flex-row">
-            <div
-              className="flex flex-col w-[80px]"
-              style={{ height: 100 * times.length }}
-            >
-              {times.map((item, index) => {
-                return (
-                  <div
-                    key={index}
-                    className="h-[100px] w-full relative flex flex-row z-3"
-                  >
-                    <div className="w-[80px] h-full relative justify-center flex">
-                      <p className="text-xs font-[400]">{item}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div
-              className="w-full grid-cols-7 h-full hidden lg:grid rounded-md overflow-clip"
-              style={{ height: 100 * times.length }}
-            >
+    <div className="w-screen h-screen flex flex-col">
+      <Header />
+      <div className="w-full h-full flex flex-row p-5 gap-5">
+        <div className="w-1/2 lg:w-2/3  h-full border border-[#d9d9d9] flex flex-col pr-5 pb-5 rounded-md items-start">
+          <div className="w-full flex flex-row h-[80px]">
+            <div className="w-[80px]" />
+            <div className="w-full grid-cols-7 hidden lg:grid">
               {daysOfTheWeek.map((item, index) => {
                 return (
                   <div
                     key={index}
-                    className="w-full relative flex flex-row z-3 h-full border-r border-[#d9d9d9]"
+                    className="w-full flex items-center pt-5 flex-col"
+                    style={
+                      {
+                        // borderLeft:
+                        //   index === 0 ? "1px solid #d9d9d9" : "0px solid #d9d9d9",
+                        // borderRight: "1px solid #d9d9d9",
+                      }
+                    }
                   >
-                    {index === 0 && (
-                      <div className="bg-black w-full absolute top-[000px] h-[100px]" />
-                    )}
-                    <div className="h-full w-full relative flex flex-col">
-                      {times.map((item, dIndex) => {
-                        return (
-                          <div
-                            key={dIndex}
-                            className="h-full hidden lg:flex relative"
-                            style={{
-                              borderBottom:
-                                dIndex + 1 < times.length
-                                  ? "1px solid #d9d9d9"
-                                  : "0px solid #d9d9d9",
-                            }}
-                          ></div>
-                        );
-                      })}
-                    </div>
+                    <p className="text-sm font-[400]">{format(item, "eeee")}</p>
+                    <p className="text-base font-[400]">{format(item, "d")}</p>
                   </div>
                 );
               })}
             </div>
-            <div
-              className="w-full flex flex-col lg:hidden relative rounded-md overflow-clip"
-              style={{ height: 100 * times.length }}
-            >
-              <div className="bg-black w-full absolute top-[0] h-[33px]" />
-              {times.map((item, index) => {
-                return (
-                  <div
-                    key={index}
-                    className="h-[100px] w-full relative flex flex-row z-3"
-                    style={{
-                      borderBottom:
-                        index + 1 < times.length
-                          ? "1px solid #d9d9d9"
-                          : "0px solid white",
-                    }}
-                  ></div>
-                );
-              })}
+            <div className="w-full flex lg:hidden">
+              <div className="w-full flex items-center pt-5 flex-col">
+                <p className="text-sm font-[400]">
+                  {format(movingDate, "eeee")}
+                </p>
+                <p className="text-base font-[400]">
+                  {format(movingDate, "d")}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="w-full h-full flex flex-row relative">
+            <div className="w-[calc(100%-80px)] h-full border border-[#d9d9d9] z-0 absolute rounded-md flex right-0 top-0" />
+            <div className="relative w-full h-[calc(100vh-196px)] rounded-md overflow-auto scrollbar-hide z-1 flex flex-row">
+              <div
+                className="flex flex-col w-[80px]"
+                style={{ height: 100 * times.length }}
+              >
+                {times.map((item, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="h-[100px] w-full relative flex flex-row z-3"
+                    >
+                      <div className="w-[80px] h-full relative justify-center flex">
+                        <p className="text-xs font-[400]">{item}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div
+                className="w-full grid-cols-7 h-full hidden lg:grid rounded-md overflow-clip"
+                style={{ height: 100 * times.length }}
+              >
+                {daysOfTheWeek.map((item, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="w-full relative flex flex-row z-3 h-full border-r border-[#d9d9d9]"
+                    >
+                      {index === 0 && (
+                        <div className="bg-black w-full absolute top-[000px] h-[100px]" />
+                      )}
+                      <div className="h-full w-full relative flex flex-col">
+                        {times.map((item, dIndex) => {
+                          return (
+                            <div
+                              key={dIndex}
+                              className="h-full hidden lg:flex relative"
+                              style={{
+                                borderBottom:
+                                  dIndex + 1 < times.length
+                                    ? "1px solid #d9d9d9"
+                                    : "0px solid #d9d9d9",
+                              }}
+                            ></div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div
+                className="w-full flex flex-col lg:hidden relative rounded-md overflow-clip"
+                style={{ height: 100 * times.length }}
+              >
+                <div className="bg-black w-full absolute top-[0] h-[33px]" />
+                {times.map((item, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="h-[100px] w-full relative flex flex-row z-3"
+                      style={{
+                        borderBottom:
+                          index + 1 < times.length
+                            ? "1px solid #d9d9d9"
+                            : "0px solid white",
+                      }}
+                    ></div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div className="w-1/2 lg:w-1/3 border border-[#d9d9d9] h-full rounded-md p-5 flex flex-col gap-5">
-        <div className="grid grid-cols-2 border h-9 rounded-md border-[#d9d9d9] relative overflow-clip">
-          <motion.div
-            className="w-1/2 bg-[#0795ff] absolute h-9"
-            animate={{ left: panelRender === true ? "50%" : 0 }}
-            transition={{ duration: 0.2 }}
-          />
-          <button
-            className="z-10"
-            onClick={() => {
-              setPanelRender(false);
-            }}
-          >
-            <motion.p
-              className="text-sm font-[400]"
-              animate={{ color: panelRender === true ? "black" : "white" }}
+        <div className="w-1/2 lg:w-1/3 border border-[#d9d9d9] h-full rounded-md p-5 flex flex-col gap-5">
+          <div className="grid grid-cols-2 border h-9 rounded-md border-[#d9d9d9] relative overflow-clip">
+            <motion.div
+              className="w-1/2 bg-[#0795ff] absolute h-9"
+              animate={{ left: panelRender === true ? "50%" : 0 }}
+              transition={{ duration: 0.2 }}
+            />
+            <button
+              className="z-10"
+              onClick={() => {
+                setPanelRender(false);
+              }}
             >
-              Blocks
-            </motion.p>
-          </button>
-          <button
-            className="z-10"
-            onClick={() => {
-              setPanelRender(true);
-            }}
-          >
-            <motion.p
-              className="text-sm font-[400]"
-              animate={{ color: panelRender === true ? "white" : "black" }}
+              <motion.p
+                className="text-sm font-[400]"
+                animate={{ color: panelRender === true ? "black" : "white" }}
+              >
+                Blocks
+              </motion.p>
+            </button>
+            <button
+              className="z-10"
+              onClick={() => {
+                setPanelRender(true);
+              }}
             >
-              Meetings
-            </motion.p>
-          </button>
+              <motion.p
+                className="text-sm font-[400]"
+                animate={{ color: panelRender === true ? "white" : "black" }}
+              >
+                Meetings
+              </motion.p>
+            </button>
+          </div>
+          {panelRender === false ? renderBlock() : renderMeetings()}
         </div>
-        {panelRender === false ? renderBlock() : renderMeetings()}
       </div>
     </div>
   );

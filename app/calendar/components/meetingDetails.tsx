@@ -1,5 +1,5 @@
 "use client";
-import { loginRequest } from "@/app/api/authConfig";
+import { loginRequest } from "@/app/hooks/authConfig";
 import { deleteMeetings } from "@/app/api/calls";
 import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import { useMsal } from "@azure/msal-react";

@@ -1,6 +1,6 @@
 "use client";
 
-import { loginRequest } from "@/app/api/authConfig";
+import { loginRequest } from "@/app/hooks/authConfig";
 import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import axios from "axios";

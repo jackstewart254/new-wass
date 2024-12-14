@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import AuthConfigProvider from "./api/authConfigProvider";
+import AuthConfigProvider from "./hooks/authConfigProvider";
 import { GlobalProvider } from "./context/global";
 import Header from "./components/header";
 import Popup from "./components/popup";
@@ -33,9 +33,7 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} fixed w-screen h-screen flex flex-col bg-white`}
         >
-          <Popup />
           <AuthConfigProvider>
-            <Header />
             <div className="">{children}</div>
           </AuthConfigProvider>
         </body>

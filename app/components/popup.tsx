@@ -13,6 +13,7 @@ import {
 import Meeting from "../types/meeting";
 import Block from "../types/block";
 import { leftChevron, rightChevron } from "../calendar/components/svg";
+import { apiConnection } from "../hooks/calls";
 
 const Popup = () => {
   const { global, setGlobal } = useGlobal();
@@ -40,9 +41,12 @@ const Popup = () => {
     const val = compareObjectValues();
   }, [content]);
 
+  useEffect(() => {
+    apiConnection();
+  }, []);
+
   const compareObjectValues = () => {
     for (let key in content) {
-      console.log("content:", content[key], "popup:", popupContent[key]);
       if (content[key] !== popupContent[key]) {
         setChanges(true);
         return false;
@@ -60,7 +64,6 @@ const Popup = () => {
   };
 
   const returnTimeOfDay = (time: number) => {
-    console.log(time);
     if (time > 11) {
       if (time === 12) {
         return time.toString() + ":00pm";
@@ -116,10 +119,15 @@ const Popup = () => {
     setContent({ ...content, room: room });
   };
 
+  const updateMeetingDuration = (duration: number) => {
+    setContent({ ...content, appointment_duration: duration });
+    handleDropdownPress("duration");
+  };
+
   const dropdown = () => {
     return (
       <motion.div
-        className="absolute top-[38px] rounded-md z-10 max-h-[calc(100vh/5)] overflow-auto no-scrollbar w-full"
+        className="absolute top-[38px] rounded-md z-10 max-h-[calc(100vh/5)] overflow-auto scrollbar-hide w-full"
         initial={{ opacity: 0, height: 0 }}
         animate={{
           opacity: showDropdown === true ? 1 : 0,
@@ -379,6 +387,9 @@ const Popup = () => {
           duration.map((item, index) => {
             return (
               <button
+                onClick={() => {
+                  updateMeetingDuration(item);
+                }}
                 key={index}
                 className="w-full items-center flex justify-center px-3 py-1"
                 style={{
@@ -386,9 +397,23 @@ const Popup = () => {
                     index + 1 < duration.length
                       ? "1px solid #d9d9d9"
                       : "0px solid #d9d9d9",
+                  backgroundColor:
+                    content?.appointment_duration === item
+                      ? "#0795FF"
+                      : "white",
                 }}
               >
-                <p className="text-sm font-[400]">{item}</p>
+                <p
+                  className="text-sm font-[400]"
+                  style={{
+                    color:
+                      content?.appointment_duration === item
+                        ? "white"
+                        : "black",
+                  }}
+                >
+                  {item}
+                </p>
               </button>
             );
           })

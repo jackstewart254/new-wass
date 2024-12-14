@@ -6,7 +6,7 @@ import {
   insertMeeting,
   accountRouting,
   fetchOwnMeetings,
-} from "../api/calls";
+} from "../hooks/calls";
 import { leftChevron, rightChevron } from "../calendar/components/svg";
 import {
   differenceInMinutes,
@@ -20,6 +20,8 @@ import { SyncLoader } from "react-spinners";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
+import { validateUser } from "../hooks/validateUser";
+import { useGlobal } from "../context/global";
 
 type user = {
   id: string;
@@ -55,6 +57,7 @@ type meeting = {
 };
 
 const Book = () => {
+  const { global, setGlobal } = useGlobal();
   const [searchLecturer, setSearchLecturer] = useState<string>("");
   const [lecturer, setLecturer] = useState<string>("");
   const [focus, setFocus] = useState<boolean>(false);
@@ -66,7 +69,6 @@ const Book = () => {
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectTimeSlot, setSelectedTimeslot] = useState<timeslot>();
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [purpose, setPurpose] = useState<string>("");
   const { instance, accounts } = useMsal();
   const [account, setAccount] = useState<object>();
@@ -77,29 +79,28 @@ const Book = () => {
   const [meetingType, setMeetingType] = useState<boolean>(false);
   const [newMeeting, setNewMeeting] = useState<boolean>(false);
   const [selectedMeeting, setSelectedMeeting] = useState<number>();
+  const { role } = global;
 
-  useEffect(() => {
-    if (instance && accounts.length > 0) {
-      instance.setActiveAccount(accounts[0]);
-      setAccount(accounts[0]);
-      fetchAccountRouting(accounts[0].username);
-    } else {
+  const callValidateUser = async () => {
+    const res = await validateUser(instance, accounts);
+    console.log(res);
+    setGlobal({ ...global, role: res?.role });
+    if (res?.allow === false) {
       router.push("./");
     }
-  }, [instance, accounts]);
+  };
 
   useEffect(() => {
-    if (account !== undefined) {
-      callOwnMeetings();
+    if (accounts.length > 0 && role === undefined) {
+      callValidateUser();
+    } else {
+      if (role === "true") {
+        router.push("./calendar");
+      }
     }
-  }, [account]);
+  }, [accounts, instance]);
 
   useEffect(() => {
-    // console.log(
-    //   slots.length,
-    //   format(availableDates[0].date, "dd/MM/yyyy"),
-    //   format(slots[1].date, "dd/MM/yyyy")
-    // );
     if (availableDates[index]) {
       const filter = slots.filter(
         (s) =>
@@ -110,6 +111,12 @@ const Book = () => {
       console.log("filter123", filter);
     }
   }, [index, slots, availableDates]);
+
+  useEffect(() => {
+    if (role === "true") {
+      router.push("./calendar");
+    }
+  }, [role]);
 
   useEffect(() => {
     if (searchLecturer !== "") {
