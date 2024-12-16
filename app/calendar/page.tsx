@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import {
   accountRouting,
+  apiConnection,
   fetchBlocks,
   fetchMeetingInfo,
   fetchMeetings,
@@ -24,15 +25,17 @@ import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import { useGlobal } from "../context/global";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import Meeting from "../types/meeting";
 import Block from "../types/block";
 import { validateUser } from "../hooks/validateUser";
 import Header from "../components/header";
+import Popup from "../components/popup";
+import { useCalendar } from "../context/calendar";
 
 const Cal = () => {
   const { global, setGlobal } = useGlobal();
-  const { closeSelect, movingDate, blocks, role } = global;
+  const { closeSelect, movingDate, role } = global;
   const [showSideBar, setShowSideBar] = useState(false);
   const [sideBarContent, setSideBarContent] = useState<String>();
   const constantDate = new Date();
@@ -50,6 +53,22 @@ const Cal = () => {
   const [blockDates, setBlockDates] = useState<Block[]>([]);
   const [panelRender, setPanelRender] = useState<boolean>(false);
   const [blockRender, setBlockRender] = useState<boolean>(false);
+  const { calendar, setCalendar } = useCalendar();
+  const { blocks, instances } = calendar;
+
+  useEffect(() => {
+    fetchBMI();
+  }, []);
+
+  const fetchBMI = async () => {
+    const response = await apiConnection(null, "fetchBMI");
+    setCalendar({
+      ...calendar,
+      meetings: response.meetings,
+      instances: response.instances,
+      blocks: response.blocks,
+    });
+  };
 
   const callValidateUser = async () => {
     const res = await validateUser(instance, accounts);
@@ -94,6 +113,10 @@ const Cal = () => {
       popupContentType: "block",
       popupContent: content,
     });
+  };
+
+  const newBlockPopup = () => {
+    setGlobal({ ...global, showPopup: true, popupContentType: "new" });
   };
 
   const setBlockDatePopup = (content: Meeting) => {
@@ -199,11 +222,6 @@ const Cal = () => {
     }
   };
 
-  const handleSignOut = () => {
-    instance.logoutPopup();
-    router.push("./");
-  };
-
   const fetchEmails = async (accessToken: string, email: string) => {
     try {
       const response = await axios.get(
@@ -285,7 +303,7 @@ const Cal = () => {
 
   const renderBlock = () => (
     <div className="flex flex-col pb-[10px] border-b border-x rounded-md border-[#d9d9d9] gap-[10px]">
-      <div className="grid grid-cols-2 gap-[10px] relative h-9 rounded-md overflow-clip border-y border-[#d9d9d9]">
+      <div className="grid grid-cols-2 gap-[10px] relative py-1 rounded-md overflow-clip border-y border-[#d9d9d9]">
         <motion.div
           className="w-1/2 h-full bg-[#0795ff] absolute"
           animate={{ left: blockRender === false ? 0 : "50%" }}
@@ -309,8 +327,8 @@ const Cal = () => {
           Instance
         </motion.button>
       </div>
-      <div className="flex max-h-[200px] px-[10px]">
-        <div className="flex flex-col w-full gap-[10px]">
+      <div className="flex max-h-[400px] px-[10px]">
+        <div className="flex flex-col w-full gap-[10px] overflow-auto">
           {blockRender === false
             ? blocks.map((item, index) => {
                 return (
@@ -369,7 +387,7 @@ const Cal = () => {
                   </button>
                 );
               })
-            : blockDates.map((item, index) => {
+            : instances.map((item, index) => {
                 console.log("index", index, item);
                 return (
                   <button
@@ -418,7 +436,8 @@ const Cal = () => {
   const renderMeetings = () => <div></div>;
 
   return (
-    <div className="w-screen h-screen flex flex-col">
+    <div className="w-screen h-screen flex flex-col relative">
+      <Popup />
       <Header />
       <div className="w-full h-full flex flex-row p-5 gap-5">
         <div className="w-1/2 lg:w-2/3  h-full border border-[#d9d9d9] flex flex-col pr-5 pb-5 rounded-md items-start">
@@ -531,10 +550,10 @@ const Cal = () => {
             </div>
           </div>
         </div>
-        <div className="w-1/2 lg:w-1/3 border border-[#d9d9d9] h-full rounded-md p-5 flex flex-col gap-5">
-          <div className="grid grid-cols-2 border h-9 rounded-md border-[#d9d9d9] relative overflow-clip">
+        <div className="w-1/2 lg:w-1/3 border border-[#d9d9d9] rounded-md p-5 flex flex-col gap-5">
+          <div className="grid grid-cols-2 border py-1 rounded-md border-[#d9d9d9] relative overflow-clip">
             <motion.div
-              className="w-1/2 bg-[#0795ff] absolute h-9"
+              className="w-1/2 bg-[#0795ff] absolute h-full"
               animate={{ left: panelRender === true ? "50%" : 0 }}
               transition={{ duration: 0.2 }}
             />
@@ -566,6 +585,14 @@ const Cal = () => {
             </button>
           </div>
           {panelRender === false ? renderBlock() : renderMeetings()}
+          {panelRender === false && (
+            <motion.button
+              className="w-full bg-[#0795FF] rounded-md py-1"
+              onClick={newBlockPopup}
+            >
+              <p className="text-sm font-[400] text-white">New block</p>
+            </motion.button>
+          )}
         </div>
       </div>
     </div>

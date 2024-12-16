@@ -83,7 +83,7 @@ const Book = () => {
 
   const callValidateUser = async () => {
     const res = await validateUser(instance, accounts);
-    console.log(res);
+    console.log("response", res);
     setGlobal({ ...global, role: res?.role });
     if (res?.allow === false) {
       router.push("./");
@@ -91,11 +91,15 @@ const Book = () => {
   };
 
   useEffect(() => {
-    if (accounts.length > 0 && role === undefined) {
-      callValidateUser();
+    if (accounts.length === 0) {
+      router.push("./");
     } else {
-      if (role === "true") {
-        router.push("./calendar");
+      if (accounts.length > 0) {
+        callValidateUser();
+      } else {
+        if (role === "true") {
+          router.push("./calendar");
+        }
       }
     }
   }, [accounts, instance]);

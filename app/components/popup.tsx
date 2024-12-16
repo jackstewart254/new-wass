@@ -14,6 +14,7 @@ import Meeting from "../types/meeting";
 import Block from "../types/block";
 import { leftChevron, rightChevron } from "../calendar/components/svg";
 import { apiConnection } from "../hooks/calls";
+import { useCalendar } from "../context/calendar";
 
 const Popup = () => {
   const { global, setGlobal } = useGlobal();
@@ -28,6 +29,7 @@ const Popup = () => {
   const [movingDate, setMovingDate] = useState<Date>();
   const today = new Date();
   const [changes, setChanges] = useState<boolean>(false);
+  const { calendar, setCalendar } = useCalendar();
 
   useEffect(() => {
     if (popupContent !== undefined) {
@@ -38,16 +40,46 @@ const Popup = () => {
   }, [popupContent]);
 
   useEffect(() => {
-    const val = compareObjectValues();
-  }, [content]);
+    if (popupContentType === "new") {
+      setMovingDate(today);
+      setContent({
+        id: "todaking",
+        created_at: today,
+        start_time: 8,
+        end_time: 17,
+        staff_id: "todaking",
+        type: false,
+        date: today,
+        appointment_duration: 20,
+        recurring_length: 0,
+        title: "",
+        room: "",
+      });
+      generateDatesInMonth(today);
+    }
+  }, [popupContentType]);
+
+  const callSetBlock = async () => {
+    const { blocks, instances, meetings } = await apiConnection(
+      content,
+      "insertBlock"
+    );
+    setCalendar({
+      ...calendar,
+      blocks: blocks,
+      instances: instances,
+    });
+  };
 
   useEffect(() => {
-    apiConnection();
-  }, []);
+    if (popupContentType !== "new") {
+      const val = compareObjectValues();
+    }
+  }, [content]);
 
   const compareObjectValues = () => {
     for (let key in content) {
-      if (content[key] !== popupContent[key]) {
+      if (content[key as keyof Block] !== popupContent[key as keyof Block]) {
         setChanges(true);
         return false;
       }
@@ -122,6 +154,10 @@ const Popup = () => {
   const updateMeetingDuration = (duration: number) => {
     setContent({ ...content, appointment_duration: duration });
     handleDropdownPress("duration");
+  };
+
+  const handleUpdateContentType = (type: boolean) => {
+    setContent({ ...content, type: type });
   };
 
   const dropdown = () => {
@@ -556,6 +592,199 @@ const Popup = () => {
     </div>
   );
 
+  const newBlockRender = () => {
+    return (
+      <div className="w-full flex flex-col gap-[10px]">
+        <div className="w-full flex flex-col gap-[5px]">
+          <div className="flex flex-row w-full justify-between">
+            <p className="text-sm font-[400] text-[#a8a8a8]">Title</p>
+            <p className="text-sm font-[400] text-[#a8a8a8]">Type</p>
+          </div>
+          <div className="flex flex-row items-center justify-between gap-[10px]">
+            <div
+              className="border border-[#d9d9d9] rounded-md py-1 px-3  w-full"
+              // placeholder="Wednesday recurring"
+            >
+              <p className="text-sm font-[400]">
+                {format(content?.date, "eeee")}{" "}
+                {content.type === true ? "recurring" : "one-off"}
+              </p>
+            </div>
+            <div className="w-[200px] grid grid-cols-2 rounded-md overflow-auto border border-[#d9d9d9] relative">
+              <motion.div
+                className="bg-[#0795FF] w-[50%] h-full absolute"
+                animate={{ left: content?.type === true ? "50%" : 0 }}
+                transition={{ duration: 0.2 }}
+              />
+              <button
+                className="w-full z-10 h-full py-1"
+                onClick={() => {
+                  handleUpdateContentType(false);
+                }}
+              >
+                <motion.p
+                  animate={{
+                    color: content?.type === false ? "white" : "black",
+                  }}
+                  className="text-sm font-[400]"
+                >
+                  One-off
+                </motion.p>
+              </button>
+              <button
+                className="w-full h-full py-1 z-10"
+                onClick={() => {
+                  handleUpdateContentType(true);
+                }}
+              >
+                <motion.p
+                  animate={{
+                    color: content?.type === true ? "white" : "black",
+                  }}
+                  className="text-sm font-[400]"
+                >
+                  Recurring
+                </motion.p>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-[5px]">
+          <div className="w-full flex flex-row justify-between gap-[10px]">
+            <p className="text-sm font-[400] text-[#a8a8a8]">Start date</p>
+            {content.type === true && (
+              <p className="text-sm font-[400] text-[#a8a8a8]">
+                Recurring length
+              </p>
+            )}
+          </div>
+          <div className="flex flex-row w-full gap-[10px]">
+            <div className="w-full relative">
+              <button
+                className="w-full flex items-start px-3 py-1 border border-[#d9d9d9] rounded-md justify-between"
+                onClick={() => {
+                  handleDropdownPress("date");
+                }}
+              >
+                <p className="text-sm font-[400]">
+                  {format(content?.date, "EEEE, d, MMMM")}
+                </p>
+              </button>
+              {dropdownContent === "date" && dropdown()}
+            </div>
+            {content.type === true && (
+              <div className="w-[10%] relative">
+                <button
+                  className="w-full px-3 py-1 border border-[#d9d9d9] rounded-md justify-between"
+                  onClick={() => {
+                    handleDropdownPress("length");
+                  }}
+                >
+                  <p className="text-sm font-[400]">
+                    {content?.recurring_length}
+                  </p>
+                </button>
+                {dropdownContent === "length" && dropdown()}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col gap-[5px]">
+          <div className="w-full flex flex-row justify-between gap-[10px]">
+            <p className="text-sm font-[400] text-[#a8a8a8]">Start time</p>
+            <p className="text-sm font-[400] text-[#a8a8a8]">End time</p>
+          </div>
+          <div className="w-full grid grid-cols-2 justify-between gap-[10px]">
+            <div className="w-full relative">
+              <button
+                className="w-full border border-[#d9d9d9] rounded-md py-1 px-3 items-start flex"
+                onClick={() => {
+                  handleDropdownPress("starttime");
+                }}
+              >
+                <p className="text-sm font-[400]">
+                  {returnTimeOfDay(content?.start_time)}
+                </p>
+              </button>
+              {dropdownContent === "starttime" && dropdown()}
+            </div>
+            <div className="w-full relative">
+              <button
+                className="w-full border border-[#d9d9d9] rounded-md py-1 px-3 items-start flex"
+                onClick={() => {
+                  handleDropdownPress("endtime");
+                }}
+              >
+                <p className="text-sm font-[400]">
+                  {returnTimeOfDay(content?.end_time)}
+                </p>
+              </button>
+              {dropdownContent === "endtime" && dropdown()}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col w-full gap-[5px]">
+          <div className="flex flex-row w-full justify-between">
+            <p className="text-sm font-[400] text-[#a8a8a8]">
+              Meeting duration
+            </p>
+            <p className="text-sm font-[400] text-[#a8a8a8]">Meeting room</p>
+          </div>
+          <div className="w-full flex flex-row gap-[10px]">
+            <div className="w-[10%] relative">
+              <button
+                onClick={() => {
+                  handleDropdownPress("duration");
+                }}
+                className="border border-[#d9d9d9] w-full rounded-md px-3 py-1 text-sm font-[400]"
+              >
+                <p>{content?.appointment_duration}</p>
+              </button>
+              {dropdownContent === "duration" && dropdown()}
+            </div>
+            <input
+              className="border border-[#d9d9d9] w-full rounded-md px-3 py-1 text-sm font-[400] focus:border-[#0795FF]"
+              value={content?.room}
+              onChange={(event) => {
+                updateMeetingRoom(event.target.value);
+              }}
+            />
+          </div>
+        </div>
+        {popupContentType === "block" ? (
+          <div className="w-full flex flex-row rounded-md justify-between gap-[10px]">
+            <button className="w-[30%] px-3 py-1 rounded-md bg-red-600">
+              <p className="text-sm font-[400] text-white">Delete</p>
+            </button>
+            {changes === true ? (
+              <button className="w-[70%] bg-[#0795FF] px-3 py-1 rounded-md">
+                <p className="text-sm font-[400] text-white">Save</p>
+              </button>
+            ) : (
+              <div className="w-[70%] bg-[#0795FF] px-3 py-1 rounded-md opacity-40 flex items-center justify-center">
+                <p className="text-sm font-[400] text-white">Save</p>
+              </div>
+            )}
+          </div>
+        ) : popupContentType === "new" ? (
+          <div className="w-full flex flex-row rounded-md justify-between gap-[10px]">
+            <button className="w-[30%] px-3 py-1 rounded-md bg-red-600">
+              <p className="text-sm font-[400] text-white">Delete</p>
+            </button>
+            <button
+              className="w-full py-1 bg-[#0795FF] rounded-md"
+              onClick={callSetBlock}
+            >
+              <p className="text-sm font-[400] text-white">Set Block</p>
+            </button>
+          </div>
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <motion.div
       initial={{ zIndex: -100, opacity: 0 }}
@@ -583,6 +812,8 @@ const Popup = () => {
             blockRender()
           ) : popupContentType === "date" ? (
             dateRender()
+          ) : popupContentType === "new" ? (
+            content !== undefined && newBlockRender()
           ) : (
             <div></div>
           )}

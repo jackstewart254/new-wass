@@ -11,7 +11,6 @@ export default function handler(req, res) {
       sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
-      // maxAge: 0
     });
 
     cookies.push(accessCookie);

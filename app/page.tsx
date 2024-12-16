@@ -27,13 +27,17 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (accounts.length > 0 && role === undefined) {
-      callValidateUser();
+    if (accounts.length === 0) {
+      instance.loginPopup();
     } else {
-      if (role === "true" && role !== undefined) {
-        router.push("/calendar");
+      if (accounts.length > 0 && role === undefined) {
+        callValidateUser();
       } else {
-        router.push("/book");
+        if (role === "true" && role !== undefined) {
+          router.push("/calendar");
+        } else {
+          router.push("/book");
+        }
       }
     }
   }, [accounts, instance, role]);

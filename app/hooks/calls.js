@@ -17,14 +17,6 @@ const encryptData = async (data) => {
 
 
 const apiConnection = async (payload, func) => {
-  console.log("Payload", payload)
-  // const response = await fetch("api/setCookie", {
-  //   method: "POST",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //   },
-  //   body: JSON.stringify({ accessToken: "hello", refreshToken: "poop" }),
-  // });
 
   const res = await axios.get('/api/getAccess', {
     withCredentials: true,
@@ -36,16 +28,19 @@ const apiConnection = async (payload, func) => {
       Authorization: `Bearer ${res.data.accessToken}`,
       'Content-Type': 'application/json',
     };
-    // await axios.post('/api/setCookie', {method: "access", value: null})
     
     switch (func) {
       case "authenticate":
         try {
+          console.log("authenticate")
+          // validate the input
+          // if access/refresh/email/name = null = throw return {allow: false}.
+          // have this function run in the popup screen as that screen is always on the DOM.  
           const response = await axios.post(domain, body, { headers });
           const admin = await axios.get('/api/getAdmin', {
             withCredentials: true,
           });
-          console.log(response)
+          console.log("AUTHENTICATED", response)
           if (response.data.allG === false) {
             if (admin.data.admin === null) {
                 await axios.post('/api/setCookie', {method: "admin", value: response.data.payload.admin})
@@ -65,36 +60,22 @@ const apiConnection = async (payload, func) => {
           return {allow: false}
         }
           
-      case "something":
+      case "insertBlock":
         try {
           const response = await axios.post(domain, body, { headers });
-          console.log(response.data)
-          if (response.data.allG === false) {
-            const admin = await axios.get('/api/getAdmin', {
-              withCredentials: true,
-            });        
-            if (admin.data.admin === null) {
-                await axios.post('/api/setCookie', {method: "admin", value: response.data.payload.admin})
-            } else {
-              if (admin.data.admin !== response.data.payload.admin) {
-                await axios.post('/api/setCookie', {method: "admin", value: response.data.payload.admin})
-              }
-            }
-            if (res)
-            if (response.data.payload.newToken === true) {
-              await axios.post('/api/setCookie', {method: "access", value: response.data.payload.token})
-            };
-          } else {
-            const admin = await axios.get('/api/getAdmin', {
-              withCredentials: true,
-            });  
-            console.log(res.data, admin.data)
-          }
-        } catch (error) {
-          console.log("error occured", error.response)
-          return {data: null, error: error.response.data.error}
+          console.log(response.data.payload);
+          return response.data.payload;
+        } catch {
+          return {instances: [], blocks: []}
         }
-    }
+      case "fetchBMI":
+        try {
+          const response = await axios.post(domain, body, { headers });
+          return response.data.payload
+        } catch {
+          return {instances: [], blocks: [], meetings: []}
+        }
+      }
   
 }
 
