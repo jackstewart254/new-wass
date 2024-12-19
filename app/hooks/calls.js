@@ -75,6 +75,13 @@ const apiConnection = async (payload, func) => {
         } catch {
           return {instances: [], blocks: [], meetings: []}
         }
+      case "deleteBlock":
+        try {
+          const response = await axios.post(domain, body, {headers})
+          return {payload: response.data.payload, error: false}
+        } catch {
+          return {error: true}
+        }
       }
   
 }

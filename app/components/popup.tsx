@@ -16,6 +16,12 @@ import { leftChevron, rightChevron } from "../calendar/components/svg";
 import { apiConnection } from "../hooks/calls";
 import { useCalendar } from "../context/calendar";
 
+type Instance = {
+  id: string;
+  block_id: string;
+  date: Date;
+};
+
 const Popup = () => {
   const { global, setGlobal } = useGlobal();
   const { showPopup, popupContentType, popupContent } = global;
@@ -30,34 +36,37 @@ const Popup = () => {
   const today = new Date();
   const [changes, setChanges] = useState<boolean>(false);
   const { calendar, setCalendar } = useCalendar();
+  const { blocks, instances } = calendar;
 
   useEffect(() => {
     if (popupContent !== undefined) {
-      setMovingDate(popupContent.date);
-      setContent(popupContent);
-      generateDatesInMonth(popupContent.date);
+      if (popupContentType === "new") {
+        setMovingDate(today);
+        setContent({
+          id: "todaking",
+          created_at: today,
+          start_time: 8,
+          end_time: 17,
+          staff_id: "todaking",
+          type: false,
+          date: today,
+          appointment_duration: 20,
+          recurring_length: 0,
+          title: "",
+          room: "",
+        });
+        generateDatesInMonth(today);
+      } else if (popupContentType === "block") {
+        setMovingDate(popupContent.date);
+        setContent(popupContent);
+        generateDatesInMonth(popupContent.date);
+      }
     }
-  }, [popupContent]);
+  }, [popupContentType, popupContent]);
 
   useEffect(() => {
-    if (popupContentType === "new") {
-      setMovingDate(today);
-      setContent({
-        id: "todaking",
-        created_at: today,
-        start_time: 8,
-        end_time: 17,
-        staff_id: "todaking",
-        type: false,
-        date: today,
-        appointment_duration: 20,
-        recurring_length: 0,
-        title: "",
-        room: "",
-      });
-      generateDatesInMonth(today);
-    }
-  }, [popupContentType]);
+    console.log(blocks, instances);
+  }, [blocks, instances]);
 
   const callSetBlock = async () => {
     const { blocks, instances, meetings } = await apiConnection(
@@ -71,11 +80,28 @@ const Popup = () => {
     });
   };
 
-  useEffect(() => {
-    if (popupContentType !== "new") {
-      const val = compareObjectValues();
+  const deleteBlock = async () => {
+    const block = content?.id;
+    const inst = instances.filter(
+      (instance: Instance) => instance.block_id === block
+    );
+    let instanceID = [];
+    console.log(inst);
+    if (inst.length > 0) {
+      instanceID = inst.map((ins: Instance) => ins.id);
+      const response = await apiConnection(
+        { block, instanceID },
+        "deleteBlock"
+      );
+      if (response.error === false) {
+        setCalendar({
+          blocks: response.payload.blocks,
+          instances: response.payload.instances,
+          meetings: response.payload.meetings,
+        });
+      }
     }
-  }, [content]);
+  };
 
   const compareObjectValues = () => {
     for (let key in content) {
@@ -576,7 +602,10 @@ const Popup = () => {
         </div>
       </div>
       <div className="w-full flex flex-row rounded-md justify-between gap-[10px]">
-        <button className="w-[30%] px-3 py-1 rounded-md bg-red-600">
+        <button
+          className="w-[30%] px-3 py-1 rounded-md bg-red-600"
+          onClick={deleteBlock}
+        >
           <p className="text-sm font-[400] text-white">Delete</p>
         </button>
         {changes === true ? (
@@ -753,7 +782,10 @@ const Popup = () => {
         </div>
         {popupContentType === "block" ? (
           <div className="w-full flex flex-row rounded-md justify-between gap-[10px]">
-            <button className="w-[30%] px-3 py-1 rounded-md bg-red-600">
+            <button
+              className="w-[30%] px-3 py-1 rounded-md bg-red-600"
+              onClick={deleteBlock}
+            >
               <p className="text-sm font-[400] text-white">Delete</p>
             </button>
             {changes === true ? (
@@ -768,7 +800,10 @@ const Popup = () => {
           </div>
         ) : popupContentType === "new" ? (
           <div className="w-full flex flex-row rounded-md justify-between gap-[10px]">
-            <button className="w-[30%] px-3 py-1 rounded-md bg-red-600">
+            <button
+              className="w-[30%] px-3 py-1 rounded-md bg-red-600"
+              onClick={deleteBlock}
+            >
               <p className="text-sm font-[400] text-white">Delete</p>
             </button>
             <button

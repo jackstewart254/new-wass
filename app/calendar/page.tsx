@@ -32,6 +32,7 @@ import { validateUser } from "../hooks/validateUser";
 import Header from "../components/header";
 import Popup from "../components/popup";
 import { useCalendar } from "../context/calendar";
+import InfoPopup from "../components/infoPopup";
 
 const Cal = () => {
   const { global, setGlobal } = useGlobal();
@@ -107,6 +108,7 @@ const Cal = () => {
   }, [account]);
 
   const setBlockPopup = (content: Block) => {
+    console.log("Block popup pressed");
     setGlobal({
       ...global,
       showPopup: true,
@@ -126,22 +128,6 @@ const Cal = () => {
       popupContentType: "date",
       popupContent: content,
     });
-  };
-
-  const fetchAccountRouting = async (email: string) => {
-    const response = await accountRouting(email);
-    console.log("Lemmings", response);
-    if (response.data === false) {
-      router.push("./book");
-    }
-  };
-
-  const callFetchBlocks = async (email: string) => {
-    const response = await fetchBlocks(email);
-    console.log("blocks", response.data.data.blocks);
-    console.log("blockDates", response.data.data.blockDates);
-    setGlobal({ ...global, blocks: response.data.data.blocks });
-    setBlockDates(response.data.data.blockDates);
   };
 
   const handleMeetingPress = (meeting: Meeting) => {
@@ -190,7 +176,6 @@ const Cal = () => {
     );
     if (data !== undefined && data !== null) {
       const emails = await handleFetchEmails(data.data.student.email);
-      console.log("week strong", emails);
       const meet = {
         emails: emails.value,
         meetingHistory: data.data.past_meetings,
@@ -209,7 +194,6 @@ const Cal = () => {
         account: instance.getActiveAccount(), // Use the active account here as well
       });
       const accessToken = tokenResponse.accessToken;
-      console.log("Access Token:", accessToken);
       return accessToken;
     } catch (error) {
       // Fallback to login if silent token acquisition fails
@@ -388,7 +372,9 @@ const Cal = () => {
                 );
               })
             : instances.map((item, index) => {
-                console.log("index", index, item);
+                const block = blocks.filter(
+                  (block) => block.id === item.block_id
+                )[0];
                 return (
                   <button
                     onClick={() => {
@@ -412,17 +398,17 @@ const Cal = () => {
                         <span className="text-[#a8a8a8] mr-[5px]">
                           Start time:{" "}
                         </span>
-                        {item.start_time > 12
-                          ? (item.start_time - 2)[1] + ":00pm"
-                          : item.start_time + ":00am"}
+                        {block.start_time > 12
+                          ? (block.start_time - 2)[1] + ":00pm"
+                          : block.start_time + ":00am"}
                       </p>
                       <p className="text-sm font-[400] flex justify-end">
                         <span className="text-[#a8a8a8] mr-[5px]">
                           End time:{" "}
                         </span>
-                        {item.end_time > 12
-                          ? (item.end_time - 2).toString()[1] + ":00pm"
-                          : item.end_time + ":00am"}{" "}
+                        {block.end_time > 12
+                          ? (block.end_time - 2).toString()[1] + ":00pm"
+                          : block.end_time + ":00am"}{" "}
                       </p>
                     </div>
                   </button>
@@ -437,6 +423,7 @@ const Cal = () => {
 
   return (
     <div className="w-screen h-screen flex flex-col relative">
+      <InfoPopup />
       <Popup />
       <Header />
       <div className="w-full h-full flex flex-row p-5 gap-5">

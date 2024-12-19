@@ -10,6 +10,7 @@ export const CalendarProvider = ({ children }) => {
     blocks: [],
     instances: [],
     meetings: [],
+    showPopup: false,
   });
 
   return (
